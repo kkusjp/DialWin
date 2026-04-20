@@ -1,5 +1,8 @@
 import { test, expect } from "@playwright/test";
 
+/*
+main test cases:
+*/
 test("test sign up privacy", async ({ page }) => {
   await page.goto("https://staging123.ca/");
   await page.getByRole("link", { name: "Login" }).click();
