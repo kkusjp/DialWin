@@ -85,3 +85,33 @@ test("test sign up check one checkbox", async ({ page }) => {
   await page.getByRole("button", { name: "Next Step" }).click();
   await expect(page.getByText("You must agree to the Privacy")).toBeVisible();
 });
+
+test("test sign up invalid email", async ({ page }) => {
+  await page.goto("https://staging123.ca/sign-up");
+  await page
+    .getByRole("checkbox", { name: "I have read and agree to the" })
+    .check();
+  await page.getByRole("checkbox", { name: "I agree to receive" }).check();
+  await page.getByRole("button", { name: "Next Step" }).click();
+  await page.getByRole("textbox", { name: "Enter Email" }).click();
+  await page.getByRole("textbox", { name: "Enter Email" }).fill("asfdaf");
+  await page.getByRole("button", { name: "Next" }).click();
+  await expect(
+    page.getByText("Please enter a valid email. Info"),
+  ).toBeVisible();
+});
+
+test("test sign up valid email", async ({ page }) => {
+  await page.goto("https://staging123.ca/sign-up");
+  await page
+    .getByRole("checkbox", { name: "I have read and agree to the" })
+    .check();
+  await page.getByRole("checkbox", { name: "I agree to receive" }).check();
+  await page.getByRole("button", { name: "Next Step" }).click();
+  await page.getByRole("textbox", { name: "Enter Email" }).click();
+  await page
+    .getByRole("textbox", { name: "Enter Email" })
+    .fill("asfdaf@test.com");
+  await page.getByRole("button", { name: "Next" }).click();
+  await expect(page.getByText("mark_email_readVerification")).toBeVisible();
+});
