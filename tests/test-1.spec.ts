@@ -1,4 +1,9 @@
 import { test, expect } from "@playwright/test";
+import dotenv from "dotenv";
+
+dotenv.config();
+
+const { PASSWORD, EMAIL } = process.env;
 
 /*
 main test cases:
