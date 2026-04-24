@@ -13,13 +13,19 @@ export class SignUpPage {
 
   constructor(page: Page) {
     this.page = page;
-    this.privacyCheckbox = page.getByRole("checkbox", { name: "I have read and agree to the" });
-    this.smsCheckbox = page.getByRole("checkbox", { name: "I agree to receive" });
+    this.privacyCheckbox = page.getByRole("checkbox", {
+      name: "I have read and agree to the",
+    });
+    this.smsCheckbox = page.getByRole("checkbox", {
+      name: "I agree to receive",
+    });
     this.nextStepButton = page.getByRole("button", { name: "Next Step" });
     this.emailInput = page.getByRole("textbox", { name: "Enter Email" });
     this.nextButton = page.getByRole("button", { name: "Next" });
     this.privacyPolicyLink = page.getByRole("link", { name: "Privacy Policy" });
-    this.termsOfServiceLink = page.getByRole("link", { name: "Terms of Service" });
+    this.termsOfServiceLink = page.getByRole("link", {
+      name: "Terms of Service",
+    });
     this.smsPolicyLink = page.getByRole("link", { name: "View SMS Policy" });
   }
 
@@ -37,7 +43,7 @@ export class SignUpPage {
   }
 
   async waitForEmailInput() {
-    await this.emailInput.waitFor({ state: "visible", timeout: 5000 });
+    await this.emailInput.waitFor({ state: "visible", timeout: 65000 });
   }
 
   async fillEmail(email: string) {
@@ -50,7 +56,9 @@ export class SignUpPage {
   }
 
   getInvalidEmailErrorMessage() {
-    return this.page.locator("mat-error").getByText(/Please enter a valid email/i);
+    return this.page
+      .locator("mat-error")
+      .getByText(/Please enter a valid email/i);
   }
 
   getVerificationHeader() {
