@@ -2,12 +2,16 @@ import { test, expect } from "@playwright/test";
 import { SignUpPage } from "../pages/SignUpPage";
 import { log } from "console";
 import dotenv from "dotenv";
-import { MailSlurp } from "mailslurp-client";
 
 dotenv.config();
 
-const mailslurp = process.env.MAILSLURP_API_KEY as string;
-const mailslurpClient = new MailSlurp({ apiKey: mailslurp });
+// Only initialize MailSlurp if API key is provided
+let mailslurpClient: any;
+const mailslurpApiKey = process.env.MAILSLURP_API_KEY;
+if (mailslurpApiKey) {
+  const { MailSlurp } = require("mailslurp-client");
+  mailslurpClient = new MailSlurp({ apiKey: mailslurpApiKey });
+}
 
 test.describe("Sign Up Flow (POM)", () => {
   let signUpPage: SignUpPage;
@@ -108,6 +112,11 @@ test.describe("Sign Up Flow (POM)", () => {
   });
 
   test("test sign up with OTP verification", async ({ page }) => {
+    test.skip(
+      !process.env.MAILSLURP_API_KEY,
+      "Skipping test because MAILSLURP_API_KEY is missing",
+    );
+
     const inbox = await mailslurpClient.createInbox();
     const tempEmail = inbox.emailAddress;
 
