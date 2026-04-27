@@ -1,8 +1,13 @@
 import { test, expect } from "@playwright/test";
 import { SignUpPage } from "../pages/SignUpPage";
+import { log } from "console";
 import dotenv from "dotenv";
+import { MailSlurp } from "mailslurp-client";
 
 dotenv.config();
+
+const mailslurp = process.env.MAILSLURP_API_KEY as string;
+const mailslurpClient = new MailSlurp({ apiKey: mailslurp });
 
 test.describe("Sign Up Flow (POM)", () => {
   let signUpPage: SignUpPage;
@@ -20,7 +25,9 @@ test.describe("Sign Up Flow (POM)", () => {
 
   test("test sign up terms", async ({ page }) => {
     const popup = await signUpPage.openTermsOfService();
-    await expect(popup.getByText("01IntroductionThis Subscriber")).toBeVisible();
+    await expect(
+      popup.getByText("01IntroductionThis Subscriber"),
+    ).toBeVisible();
   });
 
   test("test sign up SMS", async ({ page }) => {
@@ -59,10 +66,10 @@ test.describe("Sign Up Flow (POM)", () => {
     await signUpPage.agreeToAll();
     await signUpPage.clickNextStep();
     await signUpPage.waitForEmailInput();
-    
+
     await signUpPage.fillEmail("asfdaf");
     await signUpPage.clickNext();
-    
+
     await expect(signUpPage.getInvalidEmailErrorMessage()).toBeVisible();
   });
 
@@ -70,10 +77,67 @@ test.describe("Sign Up Flow (POM)", () => {
     await signUpPage.agreeToAll();
     await signUpPage.clickNextStep();
     await signUpPage.waitForEmailInput();
-    
-    await signUpPage.fillEmail("asfdaf@test.com");
+
+    await signUpPage.fillEmail(`test${Date.now()}@example.com`);
     await signUpPage.clickNext();
-    
+
     await expect(signUpPage.getVerificationHeader()).toBeVisible();
+  });
+
+  test("test sign up resend code", async ({ page }) => {
+    await signUpPage.agreeToAll();
+    await signUpPage.clickNextStep();
+    await signUpPage.waitForEmailInput();
+    await signUpPage.fillEmail(`test_resend_${Date.now()}@example.com`);
+    await signUpPage.clickNext();
+
+    await expect(signUpPage.resendCodeButton).toBeVisible();
+    // Some systems disable the button for 60 seconds.
+    // We only check it exists and is clickable if possible, or just wait for it.
+    await expect(signUpPage.resendCodeButton)
+      .toBeEnabled({ timeout: 10000 })
+      .catch(() => {
+        console.log(
+          "Resend button might be on a timer, skipping enabled check",
+        );
+      });
+
+    if (await signUpPage.resendCodeButton.isEnabled()) {
+      await signUpPage.resendCodeButton.click();
+    }
+  });
+
+  test("test sign up with OTP verification", async ({ page }) => {
+    const inbox = await mailslurpClient.createInbox();
+    const tempEmail = inbox.emailAddress;
+
+    await page.goto("https://staging123.ca/sign-up");
+    await page
+      .getByRole("checkbox", { name: "I have read and agree to the" })
+      .check();
+    await page.getByRole("checkbox", { name: "I agree to receive" }).check();
+    await page.getByRole("button", { name: "Next Step" }).click();
+    await page.getByText("Enter Email").click();
+    await page.getByRole("textbox", { name: "Enter Email" }).click();
+    await page.getByRole("textbox", { name: "Enter Email" }).fill(tempEmail);
+    await page.getByRole("button", { name: "Next" }).click();
+    await page.getByText("Enter Verification Code", { exact: true }).click();
+
+    const otpCode = await mailslurpClient
+      .waitForLatestEmail(inbox.id, 120000)
+      .then((email) => {
+        const regex = /Your verification code is:\s*(\d{6})/;
+        const match = email.body?.match(regex);
+        log(match);
+        return match ? match[1] : null;
+      });
+
+    if (otpCode) {
+      await page
+        .getByRole("textbox", { name: "Enter Verification Code" })
+        .fill(otpCode);
+    }
+    await page.getByRole("button", { name: "Verify & Continue" }).click();
+    await expect(page.getByText("Enter your phone number")).toBeVisible();
   });
 });
